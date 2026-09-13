@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "ticket-dashboard-client-side-solution",
+    "id": "952dd3d6-01c5-4e21-a650-b5c967e7e614",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.23.2"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "ticket-dashboard description"
+      },
+      "longDescription": {
+        "default": "ticket-dashboard description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "ticket-dashboard Feature",
+        "description": "The feature that activates elements of the ticket-dashboard solution.",
+        "id": "7f5b5346-c879-4bbb-b80a-b16c8e1ede1f",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/ticket-dashboard.sppkg"
+  }
+}
