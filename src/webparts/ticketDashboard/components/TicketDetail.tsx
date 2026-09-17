@@ -1,7 +1,7 @@
 import * as React from 'react';
 import styles from './TicketDashboard.module.scss';
 import { ITicketDetailProps } from './ITicketDetailProps';
-import { callProxy, renderField, formatTime, toFirstLetterCaps } from './proxyClient';
+import { callProxy, renderField, formatTime, toFirstLetterCaps, ProxyError, omitQuotations } from './proxyClient';
 
 type JsonObject = Record<string, unknown>;
 
@@ -14,6 +14,7 @@ interface ITicketDetailState {
   error: string | null;
   newComment: string;
   posting: boolean;
+  needsConnect: boolean;
 }
 
 // Resolve a display name from a user/contact record, trying the field names
@@ -49,7 +50,8 @@ export default class TicketDetail extends React.Component<ITicketDetailProps, IT
       loading: true,
       error: null,
       newComment: '',
-      posting: false
+      posting: false,
+      needsConnect: false
     };
   }
 
@@ -57,8 +59,12 @@ export default class TicketDetail extends React.Component<ITicketDetailProps, IT
     void this.loadTicket();
   }
 
-  private proxyConfig(): { functionBaseUrl: string; functionKey: string } {
-    return { functionBaseUrl: this.props.functionBaseUrl, functionKey: this.props.functionKey };
+  private proxyConfig(): { functionBaseUrl: string; functionKey: string; userEmail: string } {
+    return {
+      functionBaseUrl: this.props.functionBaseUrl,
+      functionKey: this.props.functionKey,
+      userEmail: this.props.userEmail
+    };
   }
 
   private loadTicket = async (): Promise<void> => {
@@ -127,21 +133,29 @@ export default class TicketDetail extends React.Component<ITicketDetailProps, IT
     this.setState({ posting: true, error: null });
 
     try {
+      const formData = new FormData();
+      formData.append('comment', JSON.stringify({ public: true, body: newComment }));
+
       await callProxy(this.proxyConfig(), `/v2/ticketing/ticket/${ticketId}/comment`, {
         method: 'POST',
-        body: { comment: { public: true, body: newComment } }
+        body: formData,
+        userContext: true
       });
 
-      this.setState({ newComment: '', posting: false });
+      this.setState({ newComment: '', posting: false, needsConnect: false });
       void this.loadTicket(); // refresh so the new comment shows up in the list
     } catch (err) {
-      this.setState({ posting: false, error: err instanceof Error ? err.message : 'Could not post comment' });
+      if (err instanceof ProxyError && (err.code === 'not_connected' || err.code === 'reconnect_required')) {
+        this.setState({ posting: false, needsConnect: true, error: null });
+      } else {
+        this.setState({ posting: false, error: err instanceof Error ? err.message : 'Could not post comment' });
+      }
     }
   };
 
   public render(): React.ReactElement<ITicketDetailProps> {
-    const { onBack } = this.props;
-    const { ticket, comments, assignedToName, requesterName, loading, error, newComment, posting } = this.state;
+    const { onBack, userEmail, functionBaseUrl } = this.props;
+    const { ticket, comments, assignedToName, requesterName, loading, error, newComment, posting, needsConnect } = this.state;
 
     if (loading) {
       return <div className={styles.ticketDashboard}>Loading ticket…</div>;
@@ -163,12 +177,12 @@ export default class TicketDetail extends React.Component<ITicketDetailProps, IT
               <dt>ID</dt><dd>{renderField(ticket.id)}</dd>
               <dt>Created</dt><dd>{formatTime(ticket.createTime)}</dd>
               <dt>Assigned to</dt><dd>{assignedToName}</dd>
-              <dt>Requester</dt><dd>{requesterName}</dd>
+              <dt>Requester</dt><dd>{omitQuotations(requesterName)}</dd>
               <dt>Status</dt><dd>{renderField(status ? status.displayName : ticket.status)}</dd>
               <dt>Priority</dt><dd>{toFirstLetterCaps(ticket.priority)}</dd>
               <dt>Severity</dt><dd>{toFirstLetterCaps(ticket.severity)}</dd>
               <dt>Source</dt><dd>{toFirstLetterCaps(ticket.source)}</dd>
-              <dt>Description</dt><dd>{renderField(ticket.description)}</dd>
+              <dt>Description</dt><dd>{renderField(ticket.description) || renderField(this.props.fallbackDescription)}</dd>
             </dl>
 
             <h4>Previous comments</h4>
@@ -183,17 +197,33 @@ export default class TicketDetail extends React.Component<ITicketDetailProps, IT
             </ul>
 
             <h4>Add a comment</h4>
-            <textarea
-              className={styles.commentInput}
-              value={newComment}
-              onChange={this.handleCommentChange}
-              rows={4}
-            />
-            <div>
-              <button onClick={() => { void this.postComment(); }} disabled={posting || !newComment.trim()}>
-                {posting ? 'Posting…' : 'Post comment'}
-              </button>
-            </div>
+            {needsConnect ? (
+              <p>
+                You need to connect your NinjaOne account before posting comments.{' '}
+                <a
+                  href={`${functionBaseUrl.replace(/\/ninja$/, '/ninja-login')}?user=${encodeURIComponent(userEmail)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Connect your account
+                </a>
+                , then come back and try again.
+              </p>
+            ) : (
+              <>
+                <textarea
+                  className={styles.commentInput}
+                  value={newComment}
+                  onChange={this.handleCommentChange}
+                  rows={4}
+                />
+                <div>
+                  <button onClick={() => { void this.postComment(); }} disabled={posting || !newComment.trim()}>
+                    {posting ? 'Posting…' : 'Post comment'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

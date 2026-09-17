@@ -24,7 +24,8 @@ export default class TicketDashboardWebPart extends BaseClientSideWebPart<ITicke
       {
         functionBaseUrl: this.properties.functionBaseUrl,
         functionKey: this.properties.functionKey,
-        boardId: this.properties.boardId
+        boardId: this.properties.boardId,
+        userEmail: this.context.pageContext.user.email
       }
     );
 

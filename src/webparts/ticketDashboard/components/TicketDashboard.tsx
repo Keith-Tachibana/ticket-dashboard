@@ -1,7 +1,7 @@
 import * as React from 'react';
 import styles from './TicketDashboard.module.scss';
 import { ITicketDashboardProps } from './ITicketDashboardProps';
-import { callProxy, renderField, toFirstLetterCaps, formatTime } from './proxyClient';
+import { callProxy, renderField, toFirstLetterCaps, formatTime, omitQuotations } from './proxyClient';
 import TicketDetail from './TicketDetail';
 
 type JsonObject = Record<string, unknown>;
@@ -10,14 +10,14 @@ interface ITicketDashboardState {
   tickets: JsonObject[];
   loading: boolean;
   error: string | null;
-  selectedTicketId: number | null;
+  selectedTicket: JsonObject | null;
 }
 
 export default class TicketDashboard extends React.Component<ITicketDashboardProps, ITicketDashboardState> {
 
   constructor(props: ITicketDashboardProps) {
     super(props);
-    this.state = { tickets: [], loading: true, error: null, selectedTicketId: null };
+    this.state = { tickets: [], loading: true, error: null, selectedTicket: null };
   }
 
   public componentDidMount(): void {
@@ -66,24 +66,23 @@ export default class TicketDashboard extends React.Component<ITicketDashboardPro
     }
   };
 
-  private selectTicket = (ticketId: unknown): void => {
-    const id = Number(ticketId);
-    if (!isNaN(id)) {
-      this.setState({ selectedTicketId: id });
-    }
+  private selectTicket = (ticket: JsonObject): void => {
+    this.setState({ selectedTicket: ticket });
   };
 
   public render(): React.ReactElement<ITicketDashboardProps> {
-    const { functionBaseUrl, functionKey } = this.props;
-    const { tickets, loading, error, selectedTicketId } = this.state;
+    const { functionBaseUrl, functionKey, userEmail } = this.props;
+    const { tickets, loading, error, selectedTicket } = this.state;
 
-    if (selectedTicketId !== null) {
+    if (selectedTicket !== null) {
       return (
         <TicketDetail
-          ticketId={selectedTicketId}
+          ticketId={Number(selectedTicket.id)}
           functionBaseUrl={functionBaseUrl}
           functionKey={functionKey}
-          onBack={() => this.setState({ selectedTicketId: null })}
+          userEmail={userEmail}
+          fallbackDescription={selectedTicket.description}
+          onBack={() => this.setState({ selectedTicket: null })}
         />
       );
     }
@@ -104,6 +103,7 @@ export default class TicketDashboard extends React.Component<ITicketDashboardPro
               <th>ID</th>
               <th>Subject</th>
               <th>Date</th>
+              <th>Requester</th>
               <th>Status</th>
               <th>Priority</th>
             </tr>
@@ -113,11 +113,12 @@ export default class TicketDashboard extends React.Component<ITicketDashboardPro
               <tr
                 key={renderField(ticket.id)}
                 className={styles.clickableRow}
-                onClick={() => this.selectTicket(ticket.id)}
+                onClick={() => this.selectTicket(ticket)}
               >
                 <td>{renderField(ticket.id)}</td>
                 <td>{renderField(ticket.summary)}</td>
                 <td>{formatTime(ticket.createTime)}</td>
+                <td>{renderField(omitQuotations(ticket.requester))}</td>
                 <td>{renderField(ticket.status)}</td>
                 <td>{toFirstLetterCaps(ticket.priority)}</td>
               </tr>

@@ -1,0 +1,8 @@
+node_modules
+temp/
+lib-commonjs/
+lib/
+release/
+jest-output/
+dist/
+*/debug/
