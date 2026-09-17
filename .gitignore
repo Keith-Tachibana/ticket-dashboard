@@ -5,4 +5,4 @@ lib/
 release/
 jest-output/
 dist/
-*/debug/
+**/debug/
