@@ -51,6 +51,44 @@
   color: #a4262c;
 }
 
+.successText {
+  color: #107c10;
+}
+
+.createBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+
+  label {
+    font-weight: 600;
+  }
+
+  select {
+    min-width: 280px;
+    padding: 4px;
+  }
+}
+
+.formField {
+  margin-bottom: 12px;
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+}
+
+.formInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px;
+  font-family: inherit;
+}
+
 .fieldList {
   display: grid;
   grid-template-columns: 140px 1fr;
