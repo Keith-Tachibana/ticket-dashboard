@@ -190,7 +190,7 @@ export default class TicketDetail extends React.Component<ITicketDetailProps, IT
             <ul className={styles.commentList}>
               {comments.map((entry) => (
                 <li key={renderField(entry.id)}>
-                  <div className={styles.commentMeta}>{renderField(entry.authorName)} — {formatTime(entry.createTime)}</div>
+                  <div className={styles.commentMeta}>{renderField(omitQuotations(entry.authorName))} — {formatTime(entry.createTime)}</div>
                   <div>{renderField(entry.body)}</div>
                 </li>
               ))}

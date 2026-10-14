@@ -9,6 +9,7 @@ interface ICreateTicketState {
   subject: string;
   description: string;
   priority: string;
+  severity: string;
   ticketFormId: number | null;
   formsError: string | null;
   submitting: boolean;
@@ -20,6 +21,13 @@ const PRIORITIES = [
   { value: 'LOW', label: 'Low' },
   { value: 'MEDIUM', label: 'Medium' },
   { value: 'HIGH', label: 'High' }
+];
+
+const SEVERITIES = [
+  { value: 'MINOR', label: 'Minor' },
+  { value: 'MODERATE', label: 'Moderate' },
+  { value: 'MAJOR', label: 'Major' },
+  { value: 'CRITICAL', label: 'Critical' }
 ];
 
 // NinjaOne's default "Open" status id. If your organization has customized
@@ -34,6 +42,7 @@ export default class CreateTicket extends React.Component<ICreateTicketProps, IC
       subject: '',
       description: '',
       priority: 'MEDIUM',
+      severity: 'MODERATE',
       ticketFormId: null,
       formsError: null,
       submitting: false,
@@ -87,9 +96,13 @@ export default class CreateTicket extends React.Component<ICreateTicketProps, IC
     this.setState({ priority: event.target.value });
   };
 
+  private handleSeverity = (event: React.ChangeEvent<HTMLSelectElement>): void => {
+    this.setState({ severity: event.target.value });
+  };
+
   private submit = async (): Promise<void> => {
     const { requester, onCreated } = this.props;
-    const { subject, description, priority, ticketFormId } = this.state;
+    const { subject, description, priority, severity, ticketFormId } = this.state;
     const clientId = requester.clientId;
 
     if (typeof clientId !== 'number' || ticketFormId === null) {
@@ -106,7 +119,8 @@ export default class CreateTicket extends React.Component<ICreateTicketProps, IC
       status: OPEN_STATUS,
       type: 'PROBLEM',
       requesterUid: requester.uid,
-      priority
+      priority,
+      severity
     };
 
     try {
@@ -144,7 +158,7 @@ export default class CreateTicket extends React.Component<ICreateTicketProps, IC
 
   public render(): React.ReactElement<ICreateTicketProps> {
     const { requester, onBack, userEmail, functionBaseUrl } = this.props;
-    const { subject, description, priority, ticketFormId, formsError, submitting, error, needsConnect } = this.state;
+    const { subject, description, priority, severity, ticketFormId, formsError, submitting, error, needsConnect } = this.state;
 
     const clientLinked = typeof requester.clientId === 'number';
     const canSubmit = clientLinked
@@ -213,6 +227,20 @@ export default class CreateTicket extends React.Component<ICreateTicketProps, IC
             onChange={this.handlePriority}
           >
             {PRIORITIES.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className={styles.formField}>
+          <label htmlFor="ticket-severity">Severity</label>
+          <select
+            id="ticket-severity"
+            className={styles.formInput}
+            value={severity}
+            onChange={this.handleSeverity}
+          >
+            {SEVERITIES.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>

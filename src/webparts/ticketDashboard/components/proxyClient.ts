@@ -88,7 +88,7 @@ export async function callProxy(config: IProxyConfig, targetPath: string, option
     const detail = errorBody && (errorBody.message || errorBody.error_description || errorBody.errorMessage);
     throw new ProxyError(
       detail || `Request to ${targetPath} failed (status ${response.status})`,
-      errorBody && errorBody.error
+      errorBody ? errorBody.error : undefined
     );
   }
 
@@ -138,6 +138,18 @@ export function toFirstLetterCaps(value: unknown): string {
     return text;
   }
   return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+}
+
+export function omitQuotations(value: unknown): string {
+  const name = renderField(value);
+  if (!name) {
+    return name;
+  }
+  if (name.includes('"')) {
+    const splitName = name.split('"');
+    return splitName[1].trim();
+  }
+  return name;
 }
 
 // "First Last (email)" for a record from /v2/ticketing/app-user-contact.
