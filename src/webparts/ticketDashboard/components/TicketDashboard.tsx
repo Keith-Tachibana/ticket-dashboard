@@ -4,6 +4,15 @@ import { ITicketDashboardProps } from './ITicketDashboardProps';
 import { callProxy, renderField, toFirstLetterCaps, formatTime, contactLabel, toList } from './proxyClient';
 import TicketDetail from './TicketDetail';
 import CreateTicket from './CreateTicket';
+import '@fontsource/roboto';
+import Paper from '@mui/material/Paper';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TablePagination from '@mui/material/TablePagination';
+import TableRow from '@mui/material/TableRow';
 
 type JsonObject = Record<string, unknown>;
 
@@ -17,7 +26,18 @@ interface ITicketDashboardState {
   selectedRequesterUid: string;
   creatingFor: JsonObject | null;
   notice: string | null;
+  page: number;
+  rowsPerPage: number;
 }
+
+const COLUMNS: { id: string; label: string; minWidth: number; value: (t: JsonObject) => string }[] = [
+  { id: 'id',        label: 'ID',        minWidth: 60,  value: (t) => renderField(t.id) },
+  { id: 'summary',   label: 'Subject',   minWidth: 220, value: (t) => renderField(t.summary) },
+  { id: 'createTime',label: 'Date',      minWidth: 150, value: (t) => formatTime(t.createTime) },
+  { id: 'requester', label: 'Requester', minWidth: 140, value: (t) => renderField(t.requester) },
+  { id: 'status',    label: 'Status',    minWidth: 100, value: (t) => renderField(t.status) },
+  { id: 'priority',  label: 'Priority',  minWidth: 90,  value: (t) => toFirstLetterCaps(t.priority) }
+];
 
 export default class TicketDashboard extends React.Component<ITicketDashboardProps, ITicketDashboardState> {
 
@@ -32,7 +52,9 @@ export default class TicketDashboard extends React.Component<ITicketDashboardPro
       contactsError: null,
       selectedRequesterUid: '',
       creatingFor: null,
-      notice: null
+      notice: null,
+      page: 0,
+      rowsPerPage: 10,
     };
   }
 
@@ -48,6 +70,14 @@ export default class TicketDashboard extends React.Component<ITicketDashboardPro
       userEmail: this.props.userEmail
     };
   }
+
+  private handleChangePage = (_event: unknown, newPage: number): void => {
+    this.setState({ page: newPage });
+  };
+
+  private handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
+    this.setState({ rowsPerPage: parseInt(event.target.value, 10), page: 0 });
+  };
 
   private loadTickets = async (): Promise<void> => {
     const { functionBaseUrl, boardId } = this.props;
@@ -152,7 +182,7 @@ export default class TicketDashboard extends React.Component<ITicketDashboardPro
   public render(): React.ReactElement<ITicketDashboardProps> {
     const { functionBaseUrl, functionKey, userEmail } = this.props;
     const {
-      tickets, loading, error, selectedTicket,
+      tickets, loading, error, selectedTicket, page, rowsPerPage,
       contacts, contactsError, selectedRequesterUid, creatingFor, notice
     } = this.state;
 
@@ -208,34 +238,42 @@ export default class TicketDashboard extends React.Component<ITicketDashboardPro
         {!loading && error && <p className={styles.errorText}>{error}</p>}
 
         {!loading && !error && (
-          <table className={styles.ticketTable}>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Subject</th>
-                <th>Date</th>
-                <th>Requester</th>
-                <th>Status</th>
-                <th>Priority</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tickets.map((ticket) => (
-                <tr
-                  key={renderField(ticket.id)}
-                  className={styles.clickableRow}
-                  onClick={() => this.selectTicket(ticket)}
-                >
-                  <td>{renderField(ticket.id)}</td>
-                  <td>{renderField(ticket.summary)}</td>
-                  <td>{formatTime(ticket.createTime)}</td>
-                  <td>{renderField(ticket.requester)}</td>
-                  <td>{renderField(ticket.status)}</td>
-                  <td>{toFirstLetterCaps(ticket.priority)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+            <TableContainer sx={{ maxHeight: 440 }}>
+              <Table stickyHeader aria-label="tickets">
+                <TableHead>
+                  <TableRow>
+                    {COLUMNS.map((col) => (
+                      <TableCell key={col.id} style={{ minWidth: col.minWidth }}>{col.label}</TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {tickets.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((ticket) => (
+                    <TableRow
+                      hover
+                      key={renderField(ticket.id)}
+                      sx={{ cursor: 'pointer' }}
+                      onClick={() => this.selectTicket(ticket)}
+                    >
+                      {COLUMNS.map((col) => (
+                        <TableCell key={col.id}>{col.value(ticket)}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 50]}
+              component="div"
+              count={tickets.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={this.handleChangePage}
+              onRowsPerPageChange={this.handleChangeRowsPerPage}
+            />
+          </Paper>
         )}
       </div>
     );
